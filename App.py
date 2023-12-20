@@ -4,14 +4,13 @@ from datetime import datetime, timedelta
 import uuid
 from prediction import predict
 
-
 app = Flask(__name__)
 
 # MySQL configuration
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'temantb-db'
-app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_PASSWORD'] = 'budakkorporat12'
+app.config['MYSQL_DB'] = 'temantb'
+app.config['MYSQL_HOST'] = '34.128.114.61'
 
 mysql = MySQL()
 mysql.init_app(app)
@@ -27,20 +26,22 @@ def authorize_request():
 
 
     with mysql.connection.cursor() as cur:
-        cur.execute("SELECT userID FROM users WHERE refresh_token = %s", (refresh_token,))
+        cur.execute("SELECT userId FROM users WHERE refresh_token = %s", (refresh_token,))
         user = cur.fetchone()
 
     if user is None:
         print("User not found for the given refresh token.")
         return None
 
-    user_id = user.get('userID') if isinstance(user, dict) else user
+    user_id = user.get('userId') if isinstance(user, dict) else user
     return user_id
 
 
 @app.route('/', methods=['GET'])
 def index():
-    return "hello world"
+    return 'hello'
+
+
 
 @app.route('/health', methods=['POST'])
 def health():
@@ -59,19 +60,19 @@ def health():
             created_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.now().date()
             next_date = created_date + timedelta(days=14)
 
-            userID = authorize_request()
+            userId = authorize_request()
 
-            if not userID:
+            if not userId:
                 return jsonify({"status": "error", "message": "Invalid refresh token"}), 401
 
             with mysql.connection.cursor() as conn:
                 
-                conn.execute("SELECT MAX(weeks) FROM health WHERE userID = %s", (userID,))
+                conn.execute("SELECT MAX(weeks) FROM health WHERE userId = %s", (userId,))
                 max_weeks = conn.fetchone()[0]
                 current_weeks = max_weeks + 1 if max_weeks is not None else 1
 
                
-                conn.execute("SELECT point FROM health WHERE userID = %s ORDER BY time DESC LIMIT 1", (userID,))
+                conn.execute("SELECT point FROM health WHERE userId = %s ORDER BY time DESC LIMIT 1", (userId,))
                 last_point_result = conn.fetchone()
 
                 if last_point_result is not None:
@@ -92,12 +93,13 @@ def health():
                     average = "Membaik"
                     images = 'https://storage.googleapis.com/temantb-api.appspot.com/up.png'
 
+
                 health_id = str(uuid.uuid4())
                 alert = f"Please put your health back on {next_date}"
 
                 conn.execute(
-                    "INSERT INTO health (healthId, weeks, date, nextDate, point, alert, description, average, images, userID) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (health_id, current_weeks, created_date, next_date, current_point, alert, input_text, average, images, userID),
+                    "INSERT INTO health (healthId, weeks, date, nextDate, point, alert, description, average, images, userId) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (health_id, current_weeks, created_date, next_date, current_point, alert, input_text, average, images, userId),
                 )
 
                 mysql.connection.commit()
@@ -111,7 +113,7 @@ def health():
                 "data": {
                 "ml_predict": get_predit,
                 "current_point": current_point,
-                "description": input_text, 
+                "description": input_text,
                 }      
             }), 201
 
