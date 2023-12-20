@@ -53,7 +53,7 @@ def health():
             data = request.json
             input_text = data.get('description')
 
-            get_predit = 1 if predict(input_text) == 'positif' else 0
+            get_predit = 0 if predict(input_text) == 'positif' else 1
 
             date_str = data.get('date')
             created_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.now().date()
@@ -76,17 +76,17 @@ def health():
 
                 if last_point_result is not None:
                     last_point = last_point_result[0]
-                    if get_predit == 1:
-                        current_point = last_point + 1
+                    if get_predit == 0:
+                        current_point = max(last_point - 1, 1)               
                         images = 'https://storage.googleapis.com/temantb-api.appspot.com/up.png'
                     else: 
-                        current_point = max(last_point - 1, 0)
+                        current_point = last_point + 1  
                         images = 'https://storage.googleapis.com/temantb-api.appspot.com/down.png'
 
                     if current_point > 5:
-                        average = "Membaik"
-                    else:
                         average = "Memburuk"
+                    else:
+                        average = "Membaik"
                 else:
                     current_point = 5
                     average = "Membaik"
